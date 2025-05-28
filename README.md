@@ -16,3 +16,6 @@ To run it:
 ```bash
 python main.py
 
+As a trader, V3 gives you better prices in active ranges, but you might hit a liquidity wall outside ranges (i.e. spread increases "dries")
+As an LP, V3 lets you earn more with less capital if you manage your ranges well.
+
