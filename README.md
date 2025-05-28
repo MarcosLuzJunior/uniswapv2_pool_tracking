@@ -13,9 +13,10 @@ To run it:
 2. Place `uniswap_v2.csv` in your Downloads folder
 3. Run the script with:
 
-```bash
-python main.py
-
+Observation V2 vs V3:
 As a trader, V3 gives you better prices in active ranges, but you might hit a liquidity wall outside ranges (i.e. spread increases "dries")
 As an LP, V3 lets you earn more with less capital if you manage your ranges well.
+
+```bash
+python main.py
 
