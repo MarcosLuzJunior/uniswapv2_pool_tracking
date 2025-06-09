@@ -6,7 +6,21 @@ import time
 import json
 import unittest
 import test_pool_tracking
+import requests
 
+def get_binance_price(symbol="ETHUSDT"): #No WETH/USDT pair, Binance uses native ETH, uni uses WETH for ECR20 purposes so pretend for this demo 1 WETH ~ 1 ETH
+    url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
+    response = requests.get(url)
+    return float(response.json()["price"])
+
+def detect_mispricing(reserve0, reserve1, external_price):
+    # Need to check the contract, but say we normalise it with the following assumptions:
+    weth_n= int(reserve0) / 1e18
+    usdt_n = int(reserve1) / 1e6
+    uniswap_price = usdt_n / weth_n if weth_n > 0 else 0
+    delta = abs(uniswap_price - external_price)
+    mispriced = delta > 0.01 * external_price  # e.g., >1% difference as example here, not taking into account gas fees etc
+    return mispriced, uniswap_price
 
 @dataclass
 class UniswapV2State:
@@ -90,6 +104,14 @@ def sync_metrics_tracking(sync_events, state):
     try:
         for _, row in sync_events.iterrows(): # For index (ignore), row -> iterate through rows
             state.update(row["reserve0"], row["reserve1"]) # update the state of each variable with the new values from columns reservce0 and reserve1
+
+            eth_external_price = get_binance_price()  # Using the free API no need for key I think 1500 requests per minute
+            mispriced, uni_price = detect_mispricing(state.reserve0, state.reserve1, eth_external_price)
+
+            if mispriced:
+                direction = "buy" if uni_price < eth_external_price else "sell"
+                print(f"Mispricing detected: Uniswap={uni_price}, External={eth_external_price}, Action={direction}")
+
             history.append({
                 "timestamp": row["block_timestamp"],
                 "block_number": row["block_number"],
